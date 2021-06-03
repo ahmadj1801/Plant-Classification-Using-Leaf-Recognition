@@ -50,7 +50,7 @@ def graph_hsv(img):
 def image_pre_processing(df: pd.DataFrame):
     # Display the process of a random image in the data set
     seed(0)
-    selected = 384  # randint(0, len(df))
+    selected = 1023  # randint(0, len(df))
     print('Selected Image Number = ', selected)
     # preprocess the images
     c = 0
@@ -70,11 +70,16 @@ def image_pre_processing(df: pd.DataFrame):
         # Threshold segmentation
         mask = cv2.inRange(hue, lg, dg)
         # Filtering noise
-        filtering = cv2.medianBlur(mask, 5)
+        filtering_1 = cv2.medianBlur(mask, 5)
+        # Opening -> remove stem
+        opening = cv2.morphologyEx(filtering_1, cv2.MORPH_OPEN, np.ones((7, 7), np.uint8))
+        filtering_2 = cv2.medianBlur(opening, 15)
         # Display a random image
         if selected == c:
             # Horizontal display
-            row = np.hstack((mask, filtering))
+            row1 = np.hstack((mask, filtering_1))
+            row2 = np.hstack((opening, filtering_2))
+            display = np.vstack((row1, row2))
             # Display RGB image
             graph_image(original)
             # Graph of HSV space
@@ -87,7 +92,7 @@ def image_pre_processing(df: pd.DataFrame):
             # Display HSV Image
             graph_image(hue)
             # Display
-            cv2.imshow('Pre Processing', row)
+            cv2.imshow('Pre Processing', display)
             cv2.waitKey(0)
             cv2.destroyAllWindows()
         # Counter
