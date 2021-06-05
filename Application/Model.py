@@ -10,6 +10,7 @@ from sklearn.metrics import classification_report, accuracy_score
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
 from sklearn.neural_network import MLPClassifier
+import mahotas as mt
 from sklearn.neighbors import KNeighborsClassifier
 
 
@@ -54,7 +55,8 @@ def graph_hsv(img):
 
 def image_pre_processing(df: pd.DataFrame):
     # Features
-    c = ['0', '1', '2', '3', '4', '5', '6', 'label']
+    c = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15',
+         '16', '17', '18', '19', 'label']
     f = pd.DataFrame(columns=c)
     # Display the process of a random image in the data set
     seed(0)
@@ -76,7 +78,9 @@ def image_pre_processing(df: pd.DataFrame):
         lg = (10, 50, 10)
         dg = (128, 255, 128)
         # Threshold segmentation
-        mask = cv2.inRange(hue, lg, dg)
+        mask = cv2.cvtColor(hue, cv2.COLOR_HSV2BGR)  # cv2.inRange(hue, lg, dg)
+        mask = cv2.cvtColor(mask, cv2.COLOR_BGR2GRAY)
+        print(mask.shape)
         # Filtering noise
         filtering_1 = cv2.medianBlur(mask, 5)
         # Opening -> remove stem
@@ -103,7 +107,7 @@ def image_pre_processing(df: pd.DataFrame):
             cv2.imshow('Pre Processing', display)
             cv2.waitKey(0)
             cv2.destroyAllWindows()
-            # return f
+            return f
         # Conduct feature extraction
         f = feature_extraction(f, filtering_2, row['species'])
         # Counter
@@ -112,6 +116,8 @@ def image_pre_processing(df: pd.DataFrame):
 
 
 def feature_extraction(f, img, lbl):
+    textures = mt.features.haralick(img)
+    mean = textures.mean(axis=0)
     moments = cv2.moments(img)
     hu_moments = cv2.HuMoments(moments)
     for i in range(7):
@@ -120,7 +126,9 @@ def feature_extraction(f, img, lbl):
         else:
             hu_moments[i] = 0
     f.loc[len(f.index)] = [hu_moments[0], hu_moments[1], hu_moments[2], hu_moments[3],
-                           hu_moments[4], hu_moments[5], hu_moments[6], lbl]
+                           hu_moments[4], hu_moments[5], hu_moments[6], mean[0], mean[1],
+                           mean[2], mean[3], mean[4], mean[5], mean[6], mean[7], mean[8],
+                           mean[9], mean[10], mean[11], mean[12], lbl]
     return f
 
 
@@ -136,9 +144,12 @@ def main():
     X = features.drop('label', axis=1)
     Y = features['label']
     x_train, x_test, y_train, y_test = train_test_split(X, Y, train_size=0.8, random_state=0)
-    neural_classifier = MLPClassifier(solver='adam', alpha=1e-5, hidden_layer_sizes=(15,), random_state=1)
+    '''neural_classifier = MLPClassifier(solver='adam', alpha=1e-5, hidden_layer_sizes=(15,), random_state=1)
     neural_classifier.fit(x_train, y_train)
-    classifications = neural_classifier.predict(x_test)
+    classifications = neural_classifier.predict(x_test)'''
+    knn = KNeighborsClassifier(5, weights='uniform')
+    knn.fit(x_train, y_train)
+    classifications = knn.predict(x_test)
     print(classifications)
     print(classification_report(y_test, classifications))
     print(accuracy_score(y_test, classifications))
