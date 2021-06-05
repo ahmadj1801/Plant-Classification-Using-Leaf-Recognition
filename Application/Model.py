@@ -6,10 +6,11 @@ import cv2
 from matplotlib import colors
 import matplotlib.pyplot as pt
 from matplotlib.colors import rgb_to_hsv
+from sklearn.metrics import classification_report, accuracy_score
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
 from sklearn.neural_network import MLPClassifier
-from sklearn.neighbors import  KNeighborsClassifier
+from sklearn.neighbors import KNeighborsClassifier
 
 
 def read_data_file():
@@ -102,7 +103,7 @@ def image_pre_processing(df: pd.DataFrame):
             cv2.imshow('Pre Processing', display)
             cv2.waitKey(0)
             cv2.destroyAllWindows()
-            return f
+            # return f
         # Conduct feature extraction
         f = feature_extraction(f, filtering_2, row['species'])
         # Counter
@@ -114,7 +115,10 @@ def feature_extraction(f, img, lbl):
     moments = cv2.moments(img)
     hu_moments = cv2.HuMoments(moments)
     for i in range(7):
-        hu_moments[i] = -1 * np.copysign(1.0, hu_moments[i]) * np.log10(abs(hu_moments[i]))
+        if not hu_moments[i] == 0:
+            hu_moments[i] = -1 * np.copysign(1.0, hu_moments[i]) * np.log10(abs(hu_moments[i]))
+        else:
+            hu_moments[i] = 0
     f.loc[len(f.index)] = [hu_moments[0], hu_moments[1], hu_moments[2], hu_moments[3],
                            hu_moments[4], hu_moments[5], hu_moments[6], lbl]
     return f
@@ -125,12 +129,19 @@ def main():
     features = image_pre_processing(data)
     print(features)
 
-    lbl_df = features['label']
-    lbl_df.apply(LabelEncoder().fit_transform)
+    le = LabelEncoder()
+    features['label'] = le.fit_transform(features['label'])
+    print(features)
 
     X = features.drop('label', axis=1)
-    Y = ''
-    x_train, x_test, y_train, y_test = train_test_split(X, Y, test_size=0.2, random_state=0)
+    Y = features['label']
+    x_train, x_test, y_train, y_test = train_test_split(X, Y, train_size=0.8, random_state=0)
+    neural_classifier = MLPClassifier(solver='adam', alpha=1e-5, hidden_layer_sizes=(15,), random_state=1)
+    neural_classifier.fit(x_train, y_train)
+    classifications = neural_classifier.predict(x_test)
+    print(classifications)
+    print(classification_report(y_test, classifications))
+    print(accuracy_score(y_test, classifications))
 
 
 if __name__ == '__main__':
