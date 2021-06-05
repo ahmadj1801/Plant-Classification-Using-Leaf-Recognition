@@ -60,7 +60,7 @@ def image_pre_processing(df: pd.DataFrame):
     f = pd.DataFrame(columns=c)
     # Display the process of a random image in the data set
     seed(0)
-    selected = 60 # randint(0, len(df))
+    selected = 2000# randint(0, len(df))
     print('Selected Image Number = ', selected)
     # preprocess the images
     c = 0
@@ -71,15 +71,14 @@ def image_pre_processing(df: pd.DataFrame):
         # Resize the image
         original = cv2.resize(original, (400, 400), interpolation=cv2.INTER_AREA)
         # Convert to RGB
-        original = cv2.cvtColor(original, cv2.COLOR_BGR2RGB)
+        # original = cv2.cvtColor(original, cv2.COLOR_BGR2RGB)
         # Change the colour space
-        hue = cv2.cvtColor(original, cv2.COLOR_RGB2HSV_FULL)
+        hue = cv2.cvtColor(original, cv2.COLOR_BGR2HSV)
         # Set upper and lower bounds for segmentation
         lg = (10, 50, 10)
         dg = (128, 255, 128)
         # Threshold segmentation
         mask = cv2.inRange(hue, lg, dg)
-        print(mask.shape)
         # Filtering noise
         filtering_1 = cv2.medianBlur(mask, 5)
         # Opening -> remove stem
