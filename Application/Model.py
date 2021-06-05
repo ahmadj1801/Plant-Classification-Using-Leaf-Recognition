@@ -60,7 +60,7 @@ def image_pre_processing(df: pd.DataFrame):
     f = pd.DataFrame(columns=c)
     # Display the process of a random image in the data set
     seed(0)
-    selected = 300  # randint(0, len(df))
+    selected = 60 # randint(0, len(df))
     print('Selected Image Number = ', selected)
     # preprocess the images
     c = 0
@@ -78,8 +78,7 @@ def image_pre_processing(df: pd.DataFrame):
         lg = (10, 50, 10)
         dg = (128, 255, 128)
         # Threshold segmentation
-        mask = cv2.cvtColor(hue, cv2.COLOR_HSV2BGR)  # cv2.inRange(hue, lg, dg)
-        mask = cv2.cvtColor(mask, cv2.COLOR_BGR2GRAY)
+        mask = cv2.inRange(hue, lg, dg)
         print(mask.shape)
         # Filtering noise
         filtering_1 = cv2.medianBlur(mask, 5)
