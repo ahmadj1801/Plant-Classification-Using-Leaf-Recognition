@@ -126,7 +126,7 @@ def main():
     '''neural_classifier = MLPClassifier(solver='adam', alpha=1e-5, hidden_layer_sizes=(15,), random_state=1)
     neural_classifier.fit(x_train, y_train)
     classifications = neural_classifier.predict(x_test)'''
-    knn = KNeighborsClassifier(100, weights='distance')
+    knn = KNeighborsClassifier(100, weights='uniform')
     knn.fit(x_train, y_train)
     classifications = knn.predict(x_test)
     print(classifications)
