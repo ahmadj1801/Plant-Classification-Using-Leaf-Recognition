@@ -21,7 +21,7 @@ def read_data_file():
     dataset.drop('segmented_path', axis=1, inplace=True)
     # Remove images from the 'lab'
     dataset.set_index('source', inplace=True)
-    dataset.drop('lab', axis=0, inplace=True)
+    dataset.drop('field', axis=0, inplace=True)
     # Return data
     return dataset
 
@@ -60,7 +60,7 @@ def image_pre_processing(df: pd.DataFrame):
     f = pd.DataFrame(columns=c)
     # Display the process of a random image in the data set
     seed(0)
-    selected = 2000# randint(0, len(df))
+    selected = 150  # randint(0, len(df))
     print('Selected Image Number = ', selected)
     # preprocess the images
     c = 0
@@ -68,21 +68,27 @@ def image_pre_processing(df: pd.DataFrame):
         print('Pre processing ', c, ' ', row['species'])
         # Original image
         original = cv2.imread(row['image_path'])
+        print(original.shape)
+        crop = original[0:600, 0:600]
+        cv2.imshow('test', crop)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
         # Resize the image
         original = cv2.resize(original, (400, 400), interpolation=cv2.INTER_AREA)
         # Convert to RGB
-        # original = cv2.cvtColor(original, cv2.COLOR_BGR2RGB)
+        original = cv2.cvtColor(original, cv2.COLOR_BGR2RGB)
         # Change the colour space
-        hue = cv2.cvtColor(original, cv2.COLOR_BGR2HSV)
+        hue = cv2.cvtColor(original, cv2.COLOR_RGB2HSV)
         # Set upper and lower bounds for segmentation
         lg = (10, 50, 10)
         dg = (128, 255, 128)
         # Threshold segmentation
-        mask = cv2.inRange(hue, lg, dg)
+        # mask = cv2.inRange(hue, lg, dg)
+        mask = cv2.cvtColor(original, cv2.COLOR_RGB2GRAY)
         # Filtering noise
         filtering_1 = cv2.medianBlur(mask, 5)
         # Opening -> remove stem
-        opening = cv2.morphologyEx(filtering_1, cv2.MORPH_OPEN, np.ones((7, 7), np.uint8))
+        opening = cv2.morphologyEx(mask, cv2.MORPH_OPEN, np.ones((7, 7), np.uint8))
         filtering_2 = cv2.medianBlur(opening, 15)
         # Display a random image
         if selected == c:
@@ -138,19 +144,6 @@ def main():
     le = LabelEncoder()
     features['label'] = le.fit_transform(features['label'])
     print(features)
-
-    X = features.drop('label', axis=1)
-    Y = features['label']
-    x_train, x_test, y_train, y_test = train_test_split(X, Y, train_size=0.8, random_state=0)
-    '''neural_classifier = MLPClassifier(solver='adam', alpha=1e-5, hidden_layer_sizes=(15,), random_state=1)
-    neural_classifier.fit(x_train, y_train)
-    classifications = neural_classifier.predict(x_test)'''
-    knn = KNeighborsClassifier(5, weights='uniform')
-    knn.fit(x_train, y_train)
-    classifications = knn.predict(x_test)
-    print(classifications)
-    print(classification_report(y_test, classifications))
-    print(accuracy_score(y_test, classifications))
 
 
 if __name__ == '__main__':
