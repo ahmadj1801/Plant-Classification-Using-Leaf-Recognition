@@ -7,7 +7,7 @@ from matplotlib import colors
 import matplotlib.pyplot as pt
 from matplotlib.colors import rgb_to_hsv
 from sklearn.metrics import classification_report, accuracy_score
-from sklearn.preprocessing import LabelEncoder
+from sklearn.preprocessing import LabelEncoder, MinMaxScaler, OneHotEncoder
 from sklearn.model_selection import train_test_split
 from sklearn.neural_network import MLPClassifier
 import mahotas as mt
@@ -56,11 +56,11 @@ def graph_hsv(img):
 def image_pre_processing(df: pd.DataFrame):
     # Features
     c = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15',
-         '16', '17', '18', '19', 'label']
+         '16', '17', '18', '19', 'area', 'perimeter', 'convex', 'label']
     f = pd.DataFrame(columns=c)
     # Display the process of a random image in the data set
     seed(0)
-    selected = 3000  # randint(0, len(df))
+    selected = 600  # randint(0, len(df))
     print('Selected Image Number = ', selected)
     # preprocess the images
     c = 0
@@ -104,6 +104,17 @@ def feature_extraction(f, img, lbl):
     textures = mt.features.haralick(img)
     mean = textures.mean(axis=0)
     moments = cv2.moments(img)
+    area = np.sum(img == 255)
+    contour, hierachy = cv2.findContours(img, 1, 2)
+    cnt = contour[0]
+    perimeter = cv2.arcLength(cnt, True)
+    epsilon = 0.1 * perimeter
+    contour_approximation = cv2.approxPolyDP(cnt, epsilon, True)
+    convex = cv2.isContourConvex(cnt)
+    if convex:
+        convex = 1
+    else:
+        convex = 0
     hu_moments = cv2.HuMoments(moments)
     for i in range(7):
         if not hu_moments[i] == 0:
@@ -113,23 +124,42 @@ def feature_extraction(f, img, lbl):
     f.loc[len(f.index)] = [hu_moments[0], hu_moments[1], hu_moments[2], hu_moments[3],
                            hu_moments[4], hu_moments[5], hu_moments[6], mean[0], mean[1],
                            mean[2], mean[3], mean[4], mean[5], mean[6], mean[7], mean[8],
-                           mean[9], mean[10], mean[11], mean[12], lbl]
+                           mean[9], mean[10], mean[11], mean[12], area, perimeter,
+                           convex, lbl]
     return f
+
+
+def normalise_feature_matrix(f: pd.DataFrame):
+    # Scaler Object
+    scaler = MinMaxScaler()
+    labels = f['label']
+    f = f.drop('label', axis=1)
+    normalised = pd.DataFrame(scaler.fit_transform(f), columns=f.columns)
+    normalised['label'] = labels
+    return normalised
 
 
 def main():
     data = read_data_file()
     features = image_pre_processing(data)
-    X = features.drop('label', axis=1)
+    features = normalise_feature_matrix(features)
+    print(features)
+    le = LabelEncoder()
+    features['label'] = le.fit_transform(features['label'])
     Y = features['label']
+    X = features.drop('label', axis=1)
+
     x_train, x_test, y_train, y_test = train_test_split(X, Y, train_size=0.8, random_state=0)
-    '''neural_classifier = MLPClassifier(solver='adam', alpha=1e-5, hidden_layer_sizes=(15,), random_state=1)
+    neural_classifier = MLPClassifier(solver='adam', alpha=0.0001, hidden_layer_sizes=(100,), activation='logistic',
+                                      random_state=1)
     neural_classifier.fit(x_train, y_train)
-    classifications = neural_classifier.predict(x_test)'''
-    knn = KNeighborsClassifier(100, weights='uniform')
+    classifications = neural_classifier.predict(x_test)
+
+    '''knn = KNeighborsClassifier(100, weights='uniform')
     knn.fit(x_train, y_train)
-    classifications = knn.predict(x_test)
+    classifications = knn.predict(x_test)'''
     print(classifications)
+    print(y_test)
     print(classification_report(y_test, classifications))
     print(accuracy_score(y_test, classifications))
 
