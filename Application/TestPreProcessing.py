@@ -11,6 +11,7 @@ from sklearn.preprocessing import LabelEncoder, MinMaxScaler, OneHotEncoder
 from sklearn.model_selection import train_test_split
 from sklearn.neural_network import MLPClassifier
 import mahotas as mt
+from skimage.measure import shannon_entropy
 from sklearn.neighbors import KNeighborsClassifier
 
 
@@ -55,8 +56,7 @@ def graph_hsv(img):
 
 def image_pre_processing(df: pd.DataFrame):
     # Features
-    c = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15',
-         '16', '17', '18', '19', 'area', 'perimeter', 'convex', 'label']
+    c = ['0', '1', '2', '3', '4', '5', '6', 'area', 'perimeter', 'convex', 'entropy', 'label']
     f = pd.DataFrame(columns=c)
     # Display the process of a random image in the data set
     seed(0)
@@ -101,16 +101,15 @@ def image_pre_processing(df: pd.DataFrame):
 
 
 def feature_extraction(f, img, lbl):
-    textures = mt.features.haralick(img)
-    mean = textures.mean(axis=0)
+    '''textures = mt.features.haralick(img)
+    mean = textures.mean(axis=0)'''
     moments = cv2.moments(img)
     area = np.sum(img == 255)
     contour, hierachy = cv2.findContours(img, 1, 2)
     cnt = contour[0]
     perimeter = cv2.arcLength(cnt, True)
-    epsilon = 0.1 * perimeter
-    contour_approximation = cv2.approxPolyDP(cnt, epsilon, True)
     convex = cv2.isContourConvex(cnt)
+    entropy = shannon_entropy(img)
     if convex:
         convex = 1
     else:
@@ -122,10 +121,8 @@ def feature_extraction(f, img, lbl):
         else:
             hu_moments[i] = 0
     f.loc[len(f.index)] = [hu_moments[0], hu_moments[1], hu_moments[2], hu_moments[3],
-                           hu_moments[4], hu_moments[5], hu_moments[6], mean[0], mean[1],
-                           mean[2], mean[3], mean[4], mean[5], mean[6], mean[7], mean[8],
-                           mean[9], mean[10], mean[11], mean[12], area, perimeter,
-                           convex, lbl]
+                           hu_moments[4], hu_moments[5], hu_moments[6], area, perimeter,
+                           convex, entropy, lbl]
     return f
 
 
