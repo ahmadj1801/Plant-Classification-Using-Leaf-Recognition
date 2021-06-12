@@ -6,6 +6,7 @@ import cv2
 from matplotlib import colors
 import matplotlib.pyplot as pt
 from matplotlib.colors import rgb_to_hsv
+from skimage.feature import greycomatrix, greycoprops
 from sklearn.metrics import classification_report, accuracy_score
 from sklearn.preprocessing import LabelEncoder, MinMaxScaler, OneHotEncoder
 from sklearn.model_selection import train_test_split
@@ -56,11 +57,13 @@ def graph_hsv(img):
 
 def image_pre_processing(df: pd.DataFrame):
     # Features
-    c = ['0', '1', '2', '3', '4', '5', '6', 'area', 'perimeter', 'convex', 'entropy', 'label']
+    c = ['0', '1', '2', '3', '4', '5', '6', 'area', 'perimeter', 'convex', 'entropy',
+         'hcontrast', 'hdissimilarity', 'hhomogeneity', 'henergy', 'hcorrelation',
+         'vcontrast', 'vdissimilarity', 'vhomogeneity', 'venergy', 'vcorrelation','label']
     f = pd.DataFrame(columns=c)
     # Display the process of a random image in the data set
     seed(0)
-    selected = 600  # randint(0, len(df))
+    selected = 3000  # randint(0, len(df))
     print('Selected Image Number = ', selected)
     # preprocess the images
     c = 0
@@ -94,13 +97,25 @@ def image_pre_processing(df: pd.DataFrame):
             cv2.destroyAllWindows()
             return f
         # Conduct feature extraction
-        f = feature_extraction(f, thresh, row['species'])
+        f = feature_extraction(f, thresh, gray, row['species'])
         # Counter
         c = c + 1
     return f
 
 
-def feature_extraction(f, img, lbl):
+def glcm_features(img, distance, angle):
+    glcm = greycomatrix(img, [distance], [angle], 256, symmetric=True, normed=True)
+    contrast = greycoprops(glcm, prop='contrast')
+    dissimilarity = greycoprops(glcm, prop='dissimilarity')
+    homogeneity = greycoprops(glcm, prop='homogeneity')
+    energy = greycoprops(glcm, prop='energy')
+    correlation = greycoprops(glcm, prop='correlation')
+    feat = [contrast[0][0], dissimilarity[0][0], homogeneity[0][0],
+            energy[0][0], correlation[0][0]]
+    return feat
+
+
+def feature_extraction(f, img, gray, lbl):
     '''textures = mt.features.haralick(img)
     mean = textures.mean(axis=0)'''
     moments = cv2.moments(img)
@@ -110,6 +125,8 @@ def feature_extraction(f, img, lbl):
     perimeter = cv2.arcLength(cnt, True)
     convex = cv2.isContourConvex(cnt)
     entropy = shannon_entropy(img)
+    h_glcm_features = glcm_features(img, 1, 0)
+    v_glcm_features = glcm_features(img, 1, 90)
     if convex:
         convex = 1
     else:
@@ -122,7 +139,10 @@ def feature_extraction(f, img, lbl):
             hu_moments[i] = 0
     f.loc[len(f.index)] = [hu_moments[0], hu_moments[1], hu_moments[2], hu_moments[3],
                            hu_moments[4], hu_moments[5], hu_moments[6], area, perimeter,
-                           convex, entropy, lbl]
+                           convex, entropy, h_glcm_features[0], h_glcm_features[1],
+                           h_glcm_features[2], h_glcm_features[3], h_glcm_features[4],
+                           v_glcm_features[0], v_glcm_features[1], v_glcm_features[2],
+                           v_glcm_features[3], v_glcm_features[4], lbl]
     return f
 
 
@@ -146,7 +166,7 @@ def main():
     Y = features['label']
     X = features.drop('label', axis=1)
 
-    x_train, x_test, y_train, y_test = train_test_split(X, Y, train_size=0.8, random_state=0)
+    x_train, x_test, y_train, y_test = train_test_split(X, Y, train_size=0.9, random_state=43)
     neural_classifier = MLPClassifier(solver='adam', alpha=0.0001, hidden_layer_sizes=(100,), activation='logistic',
                                       random_state=1)
     neural_classifier.fit(x_train, y_train)
