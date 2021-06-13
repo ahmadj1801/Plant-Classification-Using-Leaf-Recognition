@@ -18,7 +18,7 @@ from sklearn.neighbors import KNeighborsClassifier
 
 def read_data_file():
     # Read in the textual dataset
-    dataset = pd.read_csv('dataset/images.txt', delimiter='\t')
+    dataset = pd.read_csv('../dataset/images.txt', delimiter='\t')
     # Remove the segmented path
     dataset.drop('segmented_path', axis=1, inplace=True)
     # Remove images from the 'lab'
@@ -57,20 +57,21 @@ def graph_hsv(img):
 
 def image_pre_processing(df: pd.DataFrame):
     # Features
-    c = ['0', '1', '2', '3', '4', '5', '6', 'area', 'perimeter', 'convex', 'entropy',
+    c = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12',
+         '13', '14', '15', '16', '17', '18', '19', 'area', 'perimeter', 'convex', 'entropy',
          'hcontrast', 'hdissimilarity', 'hhomogeneity', 'henergy', 'hcorrelation',
          'vcontrast', 'vdissimilarity', 'vhomogeneity', 'venergy', 'vcorrelation','label']
     f = pd.DataFrame(columns=c)
     # Display the process of a random image in the data set
     seed(0)
-    selected = 1000  # randint(0, len(df))
+    selected = 3000  # randint(0, len(df))
     print('Selected Image Number = ', selected)
     # preprocess the images
     c = 0
     for index, row in df.iterrows():
         print('Pre processing ', c, ' ', row['species'])
         # Original image
-        original = cv2.imread(row['image_path'])
+        original = cv2.imread('../'+row['image_path'])
         crop = original[0:550, 0:550]
         # Resize the image
         original = cv2.resize(crop, (400, 400), interpolation=cv2.INTER_AREA)
@@ -116,8 +117,8 @@ def glcm_features(img, distance, angle):
 
 
 def feature_extraction(f, img, gray, lbl):
-    '''textures = mt.features.haralick(img)
-    mean = textures.mean(axis=0)'''
+    textures = mt.features.haralick(gray)
+    mean = textures.mean(axis=0)
     moments = cv2.moments(img)
     area = np.sum(img == 255)
     contour, hierachy = cv2.findContours(img, 1, 2)
@@ -138,7 +139,9 @@ def feature_extraction(f, img, gray, lbl):
         else:
             hu_moments[i] = 0
     f.loc[len(f.index)] = [hu_moments[0], hu_moments[1], hu_moments[2], hu_moments[3],
-                           hu_moments[4], hu_moments[5], hu_moments[6], area, perimeter,
+                           hu_moments[4], hu_moments[5], hu_moments[6], mean[0], mean[1],
+                        mean[2], mean[3], mean[4], mean[5], mean[6], mean[7], mean[8],
+                          mean[9], mean[10], mean[11], mean[12], area, perimeter,
                            convex, entropy, h_glcm_features[0], h_glcm_features[1],
                            h_glcm_features[2], h_glcm_features[3], h_glcm_features[4],
                            v_glcm_features[0], v_glcm_features[1], v_glcm_features[2],
