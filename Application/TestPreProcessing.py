@@ -66,7 +66,7 @@ def image_pre_processing(df: pd.DataFrame):
     f = pd.DataFrame(columns=c)
     # Display the process of a random image in the data set
     seed(0)
-    selected = 500  # randint(0, len(df))
+    selected = 1500  # randint(0, len(df))
     print('Selected Image Number = ', selected)
     # preprocess the images
     c = 0
@@ -92,7 +92,7 @@ def image_pre_processing(df: pd.DataFrame):
         # Convert to Grayscale
         gray = cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY)
         # Threshold the image
-        T, thresh = cv2.threshold(gray, 175, 255, cv2.THRESH_BINARY_INV)
+        T, thresh = cv2.threshold(gray, 185, 255, cv2.THRESH_BINARY_INV)
         # Filters for opening and filtering
         opening = filtering = []
         # Count the amount of white pixels
@@ -116,6 +116,10 @@ def image_pre_processing(df: pd.DataFrame):
             graph_hsv(crop)
             graph_image(gray, 'Grayscale Image')
             graph_image(thresh, 'Binary Image')
+            cv2.imshow('gray', gray)
+            cv2.imshow('thresh', thresh)
+            cv2.waitKey(0)
+            cv2.destroyAllWindows()
             if num_white > 2000:
                 graph_image(filtering, 'Filtered Image')
             graph_image(morph, 'Image after Morphological Operations')
