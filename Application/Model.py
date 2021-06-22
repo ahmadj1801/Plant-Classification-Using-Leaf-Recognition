@@ -55,12 +55,11 @@ def graph_hsv(img):
 
 def image_pre_processing(df: pd.DataFrame):
     # Features
-    c = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15',
-         '16', '17', '18', '19', 'label']
+    c = ['0', '1', '2', '3', '4', '5', '6', 'label']
     f = pd.DataFrame(columns=c)
     # Display the process of a random image in the data set
     seed(0)
-    selected = 150  # randint(0, len(df))
+    selected = 1000  # randint(0, len(df))
     print('Selected Image Number = ', selected)
     # preprocess the images
     c = 0
@@ -69,10 +68,10 @@ def image_pre_processing(df: pd.DataFrame):
         # Original image
         original = cv2.imread(row['image_path'])
         print(original.shape)
-        crop = original[0:600, 0:600]
-        cv2.imshow('test', crop)
+        # crop = original[0:600, 0:600]
+        '''cv2.imshow('test', crop)
         cv2.waitKey(0)
-        cv2.destroyAllWindows()
+        cv2.destroyAllWindows()'''
         # Resize the image
         original = cv2.resize(original, (400, 400), interpolation=cv2.INTER_AREA)
         # Convert to RGB
@@ -120,8 +119,8 @@ def image_pre_processing(df: pd.DataFrame):
 
 
 def feature_extraction(f, img, lbl):
-    textures = mt.features.haralick(img)
-    mean = textures.mean(axis=0)
+    '''textures = mt.features.haralick(img)
+    mean = textures.mean(axis=0)'''
     moments = cv2.moments(img)
     hu_moments = cv2.HuMoments(moments)
     for i in range(7):
@@ -130,9 +129,7 @@ def feature_extraction(f, img, lbl):
         else:
             hu_moments[i] = 0
     f.loc[len(f.index)] = [hu_moments[0], hu_moments[1], hu_moments[2], hu_moments[3],
-                           hu_moments[4], hu_moments[5], hu_moments[6], mean[0], mean[1],
-                           mean[2], mean[3], mean[4], mean[5], mean[6], mean[7], mean[8],
-                           mean[9], mean[10], mean[11], mean[12], lbl]
+                           hu_moments[4], hu_moments[5], hu_moments[6], lbl]
     return f
 
 

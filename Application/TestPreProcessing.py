@@ -73,7 +73,15 @@ def image_pre_processing(df: pd.DataFrame):
         print('Pre processing ', c, ' ', row['species'])
         # Original image
         original = cv2.imread(row['image_path'])
-        crop = original[0:550, 0:550]
+        x = original.shape[1] - 165
+        y = original.shape[0]
+        if y < 700:
+            y = y - 140
+        elif y < 770:
+            y = y - 155
+        else:
+            y = y - 180
+        crop = original[0:y, 0:x]
         # Resize the image
         original = cv2.resize(crop, (400, 400), interpolation=cv2.INTER_AREA)
         # Convert to Gray
@@ -173,13 +181,7 @@ def evaluation(classifications, truth):
     precision = round(precision_score(classifications, truth, average='macro'), 4)
     f1_score_value = round(f1_score(classifications, truth, average='macro'), 4)
     hamming_loss_value = round(hamming_loss(classifications, truth), 4)
-    # Display metrics
-    # print(classification_report(truth, classifications))
-    '''print('Accuracy = ', accuracy)
-    print('Recall = ', recall)
-    print('Precision = ', precision)
-    print('F1-Score = ', f1_score_value)
-    print('Hamming Loss = ', hamming_loss_value)'''
+    # return metrics
     return [accuracy, recall, precision, f1_score_value, hamming_loss_value]
 
 
