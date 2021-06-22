@@ -30,8 +30,9 @@ def read_data_file():
     return dataset
 
 
-def graph_image(img):
+def graph_image(img, title):
     pt.subplot(1, 2, 1)
+    pt.title(title)
     pt.imshow(img)
     pt.show()
 
@@ -65,47 +66,59 @@ def image_pre_processing(df: pd.DataFrame):
     f = pd.DataFrame(columns=c)
     # Display the process of a random image in the data set
     seed(0)
-    selected = 1000  # randint(0, len(df))
+    selected = 500  # randint(0, len(df))
     print('Selected Image Number = ', selected)
     # preprocess the images
     c = 0
     for index, row in df.iterrows():
+        # Processing the ith image which belongs to a class
         print('Pre processing ', c, ' ', row['species'])
         # Original image
         original = cv2.imread(row['image_path'])
+        # Find region of interest
         x = original.shape[1] - 165
         y = original.shape[0]
+        # Obtain a good height to crop at
         if y < 700:
             y = y - 140
         elif y < 770:
             y = y - 155
         else:
             y = y - 180
+        # Crop the image
         crop = original[0:y, 0:x]
-        # Resize the image
-        original = cv2.resize(crop, (400, 400), interpolation=cv2.INTER_AREA)
-        # Convert to Gray
-        gray = cv2.cvtColor(original, cv2.COLOR_BGR2GRAY)
+        # Resize the image for uniformity
+        crop = cv2.resize(crop, (400, 400), interpolation=cv2.INTER_AREA)
+        # Convert to Grayscale
+        gray = cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY)
+        # Threshold the image
         T, thresh = cv2.threshold(gray, 175, 255, cv2.THRESH_BINARY_INV)
-        opening = filtering = np.ones((5, 5))
+        # Filters for opening and filtering
+        opening = filtering = []
+        # Count the amount of white pixels
         num_white = np.sum(thresh == 255)
         final_image = []
+        # Conduct filtering and opening if there are more than 2000 white pixels
         if num_white > 2000:
-            opening = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, np.ones((7, 7), np.uint8))
-            # filtering = cv2.medianBlur(thresh, 7)
-            final_image = opening
+            # Filtering
+            filtering = cv2.medianBlur(thresh, 3)
+            # Opening
+            morph = cv2.morphologyEx(filtering, cv2.MORPH_OPEN, np.ones((7, 7), np.uint8))
+            # Preprocessed image
+            final_image = morph
         else:
-            final_image = thresh
+            morph = cv2.morphologyEx(thresh, cv2.MORPH_DILATE, np.ones((3, 3)))
+            final_image = morph
         # Display a random image
         if selected == c:
-            cv2.imshow('Original', original)
-            cv2.imshow('Grayscale', gray)
-            cv2.imshow('Threshold', thresh)
+            graph_image(original, 'Original Image')
+            graph_image(crop, 'Cropped Image')
+            graph_image(gray, 'Grayscale Image')
+            graph_image(thresh, 'Binary Image')
             if num_white > 2000:
-                cv2.imshow('Opening', opening)
-                cv2.imshow('Filtering', filtering)
-            cv2.waitKey(0)
-            cv2.destroyAllWindows()
+                graph_image(filtering, 'Filtered Image')
+            graph_image(morph, 'Image after Morphological Operations')
+            graph_image(final_image, 'Final Image')
             return f
         # Conduct feature extraction
         f = feature_extraction(f, final_image, gray, row['species'])
@@ -208,7 +221,6 @@ def main():
     x_train, x_test, y_train, y_test = train_test_split(X, Y, train_size=0.9, random_state=43)
     train_and_evaluate(x_train, y_train, x_test, y_test)
 
-    # TODO: Find appropriate ROI
     # TODO: Run Experiment on increments of 500 samples
     # TODO: Get images of each stage(Original, Gray, Thresholded, Filtering, Opening)
     # TODO: Get Feature vector of image(s)
