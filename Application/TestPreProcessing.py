@@ -44,17 +44,17 @@ def graph_colour(c):
 
 
 def graph_hsv(img):
-    h, s, v = cv2.split(img)
+    b, g, r = cv2.split(img)
     fig = pt.figure()
     pixel_colors = img.reshape((np.shape(img)[0] * np.shape(img)[1], 3))
     norm = colors.Normalize(vmin=-1., vmax=1.)
     norm.autoscale(pixel_colors)
     pixel_colors = norm(pixel_colors).tolist()
     axis = fig.add_subplot(1, 1, 1, projection='3d')
-    axis.scatter(h.flatten(), s.flatten(), v.flatten(), facecolors=pixel_colors, marker='.')
-    axis.set_xlabel("Hue")
-    axis.set_ylabel("Saturation")
-    axis.set_zlabel("Value")
+    axis.scatter(b.flatten(), g.flatten(), r.flatten(), facecolors=pixel_colors, marker='.')
+    axis.set_xlabel("Blue")
+    axis.set_ylabel("Green")
+    axis.set_zlabel("Red")
     pt.show()
 
 
@@ -113,6 +113,7 @@ def image_pre_processing(df: pd.DataFrame):
         if selected == c:
             graph_image(original, 'Original Image')
             graph_image(crop, 'Cropped Image')
+            graph_hsv(crop)
             graph_image(gray, 'Grayscale Image')
             graph_image(thresh, 'Binary Image')
             if num_white > 2000:
@@ -182,7 +183,12 @@ def train_and_evaluate(x_train, y_train, x_test, y_test):
     classifications = support_vector_classifier.predict(x_test)
     svm_metrics = ['Support Vector Classifier'] + evaluation(classifications, y_test)
 
-    table = [mlp_metrics, svm_metrics]
+    support_vector_classifier = svm.LinearSVC()
+    support_vector_classifier.fit(x_train, y_train)
+    classifications = support_vector_classifier.predict(x_test)
+    linear_svm_metrics = ['Linear Support Vector Classifier'] + evaluation(classifications, y_test)
+
+    table = [mlp_metrics, svm_metrics, linear_svm_metrics]
     headings = ['Classifier', 'Accuracy', 'Recall', 'Precision', 'F1-Score', 'Hamming Loss']
     print(tabulate(table, headers=headings))
 
