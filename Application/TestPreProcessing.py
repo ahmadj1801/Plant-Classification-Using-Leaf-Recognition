@@ -7,6 +7,7 @@ from matplotlib import colors
 import matplotlib.pyplot as pt
 from matplotlib.colors import rgb_to_hsv
 from skimage.feature import greycomatrix, greycoprops
+from sklearn import svm
 from sklearn.metrics import classification_report, accuracy_score
 from sklearn.preprocessing import LabelEncoder, MinMaxScaler, OneHotEncoder
 from sklearn.model_selection import train_test_split
@@ -63,7 +64,7 @@ def image_pre_processing(df: pd.DataFrame):
     f = pd.DataFrame(columns=c)
     # Display the process of a random image in the data set
     seed(0)
-    selected = 1000  # randint(0, len(df))
+    selected = 1500  # randint(0, len(df))
     print('Selected Image Number = ', selected)
     # preprocess the images
     c = 0
@@ -79,6 +80,7 @@ def image_pre_processing(df: pd.DataFrame):
         T, thresh = cv2.threshold(gray, 175, 255, cv2.THRESH_BINARY_INV)
         opening = filtering = np.ones((5, 5))
         num_white = np.sum(thresh == 255)
+        final_image = []
         if num_white > 2000:
             opening = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, np.ones((7, 7), np.uint8))
             # filtering = cv2.medianBlur(thresh, 7)
@@ -97,7 +99,7 @@ def image_pre_processing(df: pd.DataFrame):
             cv2.destroyAllWindows()
             return f
         # Conduct feature extraction
-        f = feature_extraction(f, thresh, gray, row['species'])
+        f = feature_extraction(f, final_image, gray, row['species'])
         # Counter
         c = c + 1
     return f
@@ -125,8 +127,8 @@ def feature_extraction(f, img, gray, lbl):
     perimeter = cv2.arcLength(cnt, True)
     convex = cv2.isContourConvex(cnt)
     entropy = shannon_entropy(img)
-    h_glcm_features = glcm_features(img, 1, 0)
-    v_glcm_features = glcm_features(img, 1, 90)
+    h_glcm_features = glcm_features(gray, 1, 0)
+    v_glcm_features = glcm_features(gray, 1, 90)
     if convex:
         convex = 1
     else:
@@ -145,6 +147,11 @@ def feature_extraction(f, img, gray, lbl):
                            v_glcm_features[3], v_glcm_features[4], lbl]
     return f
 
+def evaluation(classifications, truth):
+    print(classifications)
+    print(truth)
+    print(classification_report(truth, classifications))
+    print(accuracy_score(truth, classifications))
 
 def normalise_feature_matrix(f: pd.DataFrame):
     # Scaler Object
@@ -171,14 +178,16 @@ def main():
                                       random_state=1)
     neural_classifier.fit(x_train, y_train)
     classifications = neural_classifier.predict(x_test)
+    print('Multi Layer Perceptron: ')
+    evaluation(classifications, y_test)
 
-    '''knn = KNeighborsClassifier(100, weights='uniform')
-    knn.fit(x_train, y_train)
-    classifications = knn.predict(x_test)'''
-    print(classifications)
-    print(y_test)
-    print(classification_report(y_test, classifications))
-    print(accuracy_score(y_test, classifications))
+
+    support_vector_classifier = svm.SVC()
+    support_vector_classifier.fit(x_train, y_train)
+    classifications = support_vector_classifier.predict(x_test)
+    print('Support Vector Classifier')
+    evaluation(classifications, y_test)
+
 
 
 if __name__ == '__main__':

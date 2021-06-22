@@ -57,7 +57,7 @@ def graph_hsv(img):
 
 def image_pre_processing(df: pd.DataFrame):
     # Features
-    c = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12',
+    c = ['image','0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12',
          '13', '14', '15', '16', '17', '18', '19', 'area', 'perimeter', 'convex', 'entropy',
          'hcontrast', 'hdissimilarity', 'hhomogeneity', 'henergy', 'hcorrelation',
          'vcontrast', 'vdissimilarity', 'vhomogeneity', 'venergy', 'vcorrelation','label']
@@ -126,8 +126,8 @@ def feature_extraction(f, img, gray, lbl):
     perimeter = cv2.arcLength(cnt, True)
     convex = cv2.isContourConvex(cnt)
     entropy = shannon_entropy(img)
-    h_glcm_features = glcm_features(img, 1, 0)
-    v_glcm_features = glcm_features(img, 1, 90)
+    h_glcm_features = glcm_features(gray, 1, 0)
+    v_glcm_features = glcm_features(gray, 1, 90)
     if convex:
         convex = 1
     else:
@@ -138,7 +138,7 @@ def feature_extraction(f, img, gray, lbl):
             hu_moments[i] = -1 * np.copysign(1.0, hu_moments[i]) * np.log10(abs(hu_moments[i]))
         else:
             hu_moments[i] = 0
-    f.loc[len(f.index)] = [hu_moments[0], hu_moments[1], hu_moments[2], hu_moments[3],
+    f.loc[len(f.index)] = [img, hu_moments[0], hu_moments[1], hu_moments[2], hu_moments[3],
                            hu_moments[4], hu_moments[5], hu_moments[6], mean[0], mean[1],
                         mean[2], mean[3], mean[4], mean[5], mean[6], mean[7], mean[8],
                           mean[9], mean[10], mean[11], mean[12], area, perimeter,
