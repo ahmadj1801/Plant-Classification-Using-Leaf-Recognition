@@ -222,7 +222,6 @@ def main():
     train_and_evaluate(x_train, y_train, x_test, y_test)
 
     # TODO: Run Experiment on increments of 500 samples
-    # TODO: Get images of each stage(Original, Gray, Thresholded, Filtering, Opening)
     # TODO: Get Feature vector of image(s)
 
 
