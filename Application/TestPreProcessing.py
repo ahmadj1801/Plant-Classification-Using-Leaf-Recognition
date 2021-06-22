@@ -15,6 +15,7 @@ from sklearn.neural_network import MLPClassifier
 import mahotas as mt
 from skimage.measure import shannon_entropy
 from sklearn.neighbors import KNeighborsClassifier
+from tabulate import tabulate
 
 
 def read_data_file():
@@ -44,7 +45,7 @@ def graph_colour(c):
 def graph_hsv(img):
     h, s, v = cv2.split(img)
     fig = pt.figure()
-    pixel_colors = img.reshape((np.shape(img)[0]*np.shape(img)[1], 3))
+    pixel_colors = img.reshape((np.shape(img)[0] * np.shape(img)[1], 3))
     norm = colors.Normalize(vmin=-1., vmax=1.)
     norm.autoscale(pixel_colors)
     pixel_colors = norm(pixel_colors).tolist()
@@ -60,7 +61,7 @@ def image_pre_processing(df: pd.DataFrame):
     # Features
     c = ['0', '1', '2', '3', '4', '5', '6', 'area', 'perimeter', 'convex', 'entropy',
          'hcontrast', 'hdissimilarity', 'hhomogeneity', 'henergy', 'hcorrelation',
-         'vcontrast', 'vdissimilarity', 'vhomogeneity', 'venergy', 'vcorrelation','label']
+         'vcontrast', 'vdissimilarity', 'vhomogeneity', 'venergy', 'vcorrelation', 'label']
     f = pd.DataFrame(columns=c)
     # Display the process of a random image in the data set
     seed(0)
@@ -147,22 +148,40 @@ def feature_extraction(f, img, gray, lbl):
                            v_glcm_features[3], v_glcm_features[4], lbl]
     return f
 
+
+def train_and_evaluate(x_train, y_train, x_test, y_test):
+    neural_classifier = MLPClassifier(solver='adam', alpha=0.0001, hidden_layer_sizes=(100,), activation='logistic',
+                                      random_state=1)
+    neural_classifier.fit(x_train, y_train)
+    classifications = neural_classifier.predict(x_test)
+    mlp_metrics = ['Multi-Layer Perceptron'] + evaluation(classifications, y_test)
+
+    support_vector_classifier = svm.SVC()
+    support_vector_classifier.fit(x_train, y_train)
+    classifications = support_vector_classifier.predict(x_test)
+    svm_metrics = ['Support Vector Classifier'] + evaluation(classifications, y_test)
+
+    table = [mlp_metrics, svm_metrics]
+    headings = ['Classifier', 'Accuracy', 'Recall', 'Precision', 'F1-Score', 'Hamming Loss']
+    print(tabulate(table, headers=headings))
+
+
 def evaluation(classifications, truth):
-    # print(classifications)
-    # print(truth)
     # Calculate metrics
-    accuracy = accuracy_score(truth, classifications)
-    recall = recall_score(truth, classifications, average='macro')
-    precision = precision_score(classifications, truth, average='macro')
-    f1_score_value = f1_score(classifications, truth, average='macro')
-    hamming_loss_value = hamming_loss(classifications, truth)
+    accuracy = round(accuracy_score(truth, classifications), 4)
+    recall = round(recall_score(truth, classifications, average='macro'), 4)
+    precision = round(precision_score(classifications, truth, average='macro'), 4)
+    f1_score_value = round(f1_score(classifications, truth, average='macro'), 4)
+    hamming_loss_value = round(hamming_loss(classifications, truth), 4)
     # Display metrics
     # print(classification_report(truth, classifications))
-    print('Accuracy = ', accuracy)
+    '''print('Accuracy = ', accuracy)
     print('Recall = ', recall)
     print('Precision = ', precision)
     print('F1-Score = ', f1_score_value)
-    print('Hamming Loss = ', hamming_loss_value)
+    print('Hamming Loss = ', hamming_loss_value)'''
+    return [accuracy, recall, precision, f1_score_value, hamming_loss_value]
+
 
 def normalise_feature_matrix(f: pd.DataFrame):
     # Scaler Object
@@ -185,25 +204,12 @@ def main():
     X = features.drop('label', axis=1)
 
     x_train, x_test, y_train, y_test = train_test_split(X, Y, train_size=0.9, random_state=43)
-    neural_classifier = MLPClassifier(solver='adam', alpha=0.0001, hidden_layer_sizes=(100,), activation='logistic',
-                                      random_state=1)
-    neural_classifier.fit(x_train, y_train)
-    classifications = neural_classifier.predict(x_test)
-    print('Multi Layer Perceptron: ')
-    evaluation(classifications, y_test)
-
-
-    support_vector_classifier = svm.SVC()
-    support_vector_classifier.fit(x_train, y_train)
-    classifications = support_vector_classifier.predict(x_test)
-    print('\nSupport Vector Classifier')
-    evaluation(classifications, y_test)
+    train_and_evaluate(x_train, y_train, x_test, y_test)
 
     # TODO: Find appropriate ROI
     # TODO: Run Experiment on increments of 500 samples
     # TODO: Get images of each stage(Original, Gray, Thresholded, Filtering, Opening)
     # TODO: Get Feature vector of image(s)
-    # TODO: Look into Tabulate
 
 
 if __name__ == '__main__':
