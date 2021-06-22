@@ -8,7 +8,7 @@ import matplotlib.pyplot as pt
 from matplotlib.colors import rgb_to_hsv
 from skimage.feature import greycomatrix, greycoprops
 from sklearn import svm
-from sklearn.metrics import classification_report, accuracy_score
+from sklearn.metrics import classification_report, accuracy_score, recall_score, precision_score, f1_score, hamming_loss
 from sklearn.preprocessing import LabelEncoder, MinMaxScaler, OneHotEncoder
 from sklearn.model_selection import train_test_split
 from sklearn.neural_network import MLPClassifier
@@ -64,7 +64,7 @@ def image_pre_processing(df: pd.DataFrame):
     f = pd.DataFrame(columns=c)
     # Display the process of a random image in the data set
     seed(0)
-    selected = 1500  # randint(0, len(df))
+    selected = 1000  # randint(0, len(df))
     print('Selected Image Number = ', selected)
     # preprocess the images
     c = 0
@@ -148,10 +148,21 @@ def feature_extraction(f, img, gray, lbl):
     return f
 
 def evaluation(classifications, truth):
-    print(classifications)
-    print(truth)
-    print(classification_report(truth, classifications))
-    print(accuracy_score(truth, classifications))
+    # print(classifications)
+    # print(truth)
+    # Calculate metrics
+    accuracy = accuracy_score(truth, classifications)
+    recall = recall_score(truth, classifications, average='macro')
+    precision = precision_score(classifications, truth, average='macro')
+    f1_score_value = f1_score(classifications, truth, average='macro')
+    hamming_loss_value = hamming_loss(classifications, truth)
+    # Display metrics
+    # print(classification_report(truth, classifications))
+    print('Accuracy = ', accuracy)
+    print('Recall = ', recall)
+    print('Precision = ', precision)
+    print('F1-Score = ', f1_score_value)
+    print('Hamming Loss = ', hamming_loss_value)
 
 def normalise_feature_matrix(f: pd.DataFrame):
     # Scaler Object
@@ -185,9 +196,14 @@ def main():
     support_vector_classifier = svm.SVC()
     support_vector_classifier.fit(x_train, y_train)
     classifications = support_vector_classifier.predict(x_test)
-    print('Support Vector Classifier')
+    print('\nSupport Vector Classifier')
     evaluation(classifications, y_test)
 
+    # TODO: Find appropriate ROI
+    # TODO: Run Experiment on increments of 500 samples
+    # TODO: Get images of each stage(Original, Gray, Thresholded, Filtering, Opening)
+    # TODO: Get Feature vector of image(s)
+    # TODO: Look into Tabulate
 
 
 if __name__ == '__main__':
