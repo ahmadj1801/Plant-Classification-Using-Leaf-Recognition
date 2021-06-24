@@ -216,21 +216,21 @@ def train_and_evaluate(x_train, y_train, x_test, y_test):
     neural_classifier.fit(x_train, y_train)
     classifications = neural_classifier.predict(x_test)
     mlp_metrics = ['Multi-Layer Perceptron'] + evaluation(classifications, y_test)
-    print(classification_report(y_test, classifications, zero_division=1))
+    print('MLP Classification Report\n', classification_report(y_test, classifications, zero_division=1))
 
     # SVC Model
     support_vector_classifier = svm.SVC(kernel='poly')
     support_vector_classifier.fit(x_train, y_train)
     classifications = support_vector_classifier.predict(x_test)
     svm_metrics = ['Support Vector Classifier'] + evaluation(classifications, y_test)
-    print(classification_report(y_test, classifications, zero_division=1))
+    print('SVC Classification Report\n', classification_report(y_test, classifications, zero_division=1))
 
     # Linear SVC Model
     linear_support_vector_classifier = svm.LinearSVC()
     linear_support_vector_classifier.fit(x_train, y_train)
     classifications = linear_support_vector_classifier.predict(x_test)
     linear_svm_metrics = ['Linear Support Vector Classifier'] + evaluation(classifications, y_test)
-    print(classification_report(y_test, classifications, zero_division=1))
+    print('Linear SVC Classification Report\n', classification_report(y_test, classifications, zero_division=1))
 
     # Construct neat display
     table = [mlp_metrics, svm_metrics, linear_svm_metrics]
