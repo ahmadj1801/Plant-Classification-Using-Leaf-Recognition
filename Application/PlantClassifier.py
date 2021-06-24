@@ -1,5 +1,4 @@
 from random import seed, randint
-
 import numpy as np
 import pandas as pd
 import cv2
@@ -12,9 +11,7 @@ from sklearn.metrics import classification_report, accuracy_score, recall_score,
 from sklearn.preprocessing import LabelEncoder, MinMaxScaler, OneHotEncoder
 from sklearn.model_selection import train_test_split
 from sklearn.neural_network import MLPClassifier
-import mahotas as mt
 from skimage.measure import shannon_entropy
-from sklearn.neighbors import KNeighborsClassifier
 from tabulate import tabulate
 
 
@@ -23,7 +20,7 @@ def read_data_file():
     dataset = pd.read_csv('dataset/images.txt', delimiter='\t')
     # Remove the segmented path
     dataset.drop('segmented_path', axis=1, inplace=True)
-    # Remove images from the 'lab'
+    # Remove images from the 'field'
     dataset.set_index('source', inplace=True)
     dataset.drop('field', axis=0, inplace=True)
     # Return data
@@ -66,8 +63,16 @@ def image_pre_processing(df: pd.DataFrame):
     f = pd.DataFrame(columns=c)
     # Display the process of a random image in the data set
     seed(0)
+    n = input('How many images would you like to train the model on.'
+              '\n1. < 5000\n2. >5000 and <10000\n3. Full dataset\n')
+    if n == 1:
+        selected = randint(0, 5000)
+    elif n == 2:
+        selected = randint(5000, 10000)
+    else:
+        selected = len(df)
     selected = 1000  # randint(0, len(df))
-    print('Selected Image Number = ', selected)
+    print('Total Number of Images Being Used = ', selected)
     # preprocess the images
     c = 0
     for index, row in df.iterrows():
@@ -112,7 +117,7 @@ def image_pre_processing(df: pd.DataFrame):
         else:
             morph = cv2.morphologyEx(thresh, cv2.MORPH_DILATE, np.ones((3, 3)))
             final_image = morph
-        # Display a random image
+        # Display a last image
         if selected == c:
             plant_name = row['species']
             graph_image(original, plant_name + ' Original Image')
@@ -125,6 +130,9 @@ def image_pre_processing(df: pd.DataFrame):
             graph_image(morph, plant_name + ' after Morphological Operations')
             graph_image(final_image, plant_name + ' Final Image')
             return f
+        if c == 9243:
+            print('att bad image')
+            num = 1 + 1
         # Conduct feature extraction
         f = feature_extraction(f, final_image, gray, row['species'])
         # Counter
@@ -145,22 +153,30 @@ def glcm_features(img, distance, angle):
 
 
 def feature_extraction(f, img, gray, lbl):
-    '''textures = mt.features.haralick(img)
-    mean = textures.mean(axis=0)'''
     moments = cv2.moments(img)
     area = np.sum(img == 255)
+    if area == 0:
+        area = 1
+    cnt = 1
+    perimeter = 1
+    convex = False
     contour, hierachy = cv2.findContours(img, 1, 2)
-    cnt = contour[0]
-    perimeter = cv2.arcLength(cnt, True)
+    if len(contour) > 0:
+        cnt = contour[0]
+        perimeter = cv2.arcLength(cnt, True)
+        convex = cv2.isContourConvex(cnt)
+    else:
+        perimeter = f['perimeter'].iloc[-1]
+        convex = f['convex'].iloc[-1]
     compactness = (perimeter**2) / area
-    convex = cv2.isContourConvex(cnt)
     entropy = shannon_entropy(img)
     h_glcm_features = glcm_features(gray, 1, 0)
     v_glcm_features = glcm_features(gray, 1, 90)
-    if convex:
+    if convex or convex == 1:
         convex = 1
     else:
         convex = 0
+
     hu_moments = cv2.HuMoments(moments)
     for i in range(7):
         if not hu_moments[i] == 0:
@@ -232,7 +248,6 @@ def main():
     x_train, x_test, y_train, y_test = train_test_split(X, Y, train_size=0.9, random_state=43)
     train_and_evaluate(x_train, y_train, x_test, y_test)
 
-    # TODO: Run Experiment on increments of 500 samples
     # TODO: Get Feature vector of image(s)
 
 
