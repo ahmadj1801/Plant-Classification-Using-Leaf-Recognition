@@ -60,19 +60,19 @@ def graph_hsv(img):
 
 def image_pre_processing(df: pd.DataFrame):
     # Features
-    c = ['0', '1', '2', '3', '4', '5', '6', 'area', 'perimeter', 'convex', 'entropy',
+    c = ['0', '1', '2', '3', '4', '5', '6', 'area', 'perimeter', 'compactness','convex', 'entropy',
          'hcontrast', 'hdissimilarity', 'hhomogeneity', 'henergy', 'hcorrelation',
          'vcontrast', 'vdissimilarity', 'vhomogeneity', 'venergy', 'vcorrelation', 'label']
     f = pd.DataFrame(columns=c)
     # Display the process of a random image in the data set
     seed(0)
-    selected = 1500  # randint(0, len(df))
+    selected = 1000  # randint(0, len(df))
     print('Selected Image Number = ', selected)
     # preprocess the images
     c = 0
     for index, row in df.iterrows():
         # Processing the ith image which belongs to a class
-        print('Pre processing ', c, ' ', row['species'])
+        print('Pre processing ', c, '/', selected, row['species'])
         # Original image
         original = cv2.imread(row['image_path'])
         # Find region of interest
@@ -91,12 +91,15 @@ def image_pre_processing(df: pd.DataFrame):
         crop = cv2.resize(crop, (400, 400), interpolation=cv2.INTER_AREA)
         # Convert to Grayscale
         gray = cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY)
-        # Threshold the image
-        T, thresh = cv2.threshold(gray, 185, 255, cv2.THRESH_BINARY_INV)
-        # Filters for opening and filtering
-        opening = filtering = []
+        # Initial threshold
+        T, thresh = cv2.threshold(gray, 175, 255, cv2.THRESH_BINARY_INV)
         # Count the amount of white pixels
         num_white = np.sum(thresh == 255)
+        if num_white > 2000:
+            # Threshold the image
+            T, thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+            # Filters for opening and filtering
+        opening = filtering = []
         final_image = []
         # Conduct filtering and opening if there are more than 2000 white pixels
         if num_white > 2000:
@@ -111,19 +114,16 @@ def image_pre_processing(df: pd.DataFrame):
             final_image = morph
         # Display a random image
         if selected == c:
-            graph_image(original, 'Original Image')
-            graph_image(crop, 'Cropped Image')
+            plant_name = row['species']
+            graph_image(original, plant_name + ' Original Image')
+            graph_image(crop, plant_name + ' Cropped Image')
             graph_hsv(crop)
-            graph_image(gray, 'Grayscale Image')
-            graph_image(thresh, 'Binary Image')
-            cv2.imshow('gray', gray)
-            cv2.imshow('thresh', thresh)
-            cv2.waitKey(0)
-            cv2.destroyAllWindows()
+            graph_image(gray, plant_name + ' Grayscale Image')
+            graph_image(thresh, plant_name + ' Binary Image')
             if num_white > 2000:
-                graph_image(filtering, 'Filtered Image')
-            graph_image(morph, 'Image after Morphological Operations')
-            graph_image(final_image, 'Final Image')
+                graph_image(filtering, plant_name + ' Filtered Image')
+            graph_image(morph, plant_name + ' after Morphological Operations')
+            graph_image(final_image, plant_name + ' Final Image')
             return f
         # Conduct feature extraction
         f = feature_extraction(f, final_image, gray, row['species'])
@@ -152,6 +152,7 @@ def feature_extraction(f, img, gray, lbl):
     contour, hierachy = cv2.findContours(img, 1, 2)
     cnt = contour[0]
     perimeter = cv2.arcLength(cnt, True)
+    compactness = (perimeter**2) / area
     convex = cv2.isContourConvex(cnt)
     entropy = shannon_entropy(img)
     h_glcm_features = glcm_features(gray, 1, 0)
@@ -168,7 +169,7 @@ def feature_extraction(f, img, gray, lbl):
             hu_moments[i] = 0
     f.loc[len(f.index)] = [hu_moments[0], hu_moments[1], hu_moments[2], hu_moments[3],
                            hu_moments[4], hu_moments[5], hu_moments[6], area, perimeter,
-                           convex, entropy, h_glcm_features[0], h_glcm_features[1],
+                           compactness, convex, entropy, h_glcm_features[0], h_glcm_features[1],
                            h_glcm_features[2], h_glcm_features[3], h_glcm_features[4],
                            v_glcm_features[0], v_glcm_features[1], v_glcm_features[2],
                            v_glcm_features[3], v_glcm_features[4], lbl]
@@ -176,20 +177,20 @@ def feature_extraction(f, img, gray, lbl):
 
 
 def train_and_evaluate(x_train, y_train, x_test, y_test):
-    neural_classifier = MLPClassifier(solver='adam', alpha=0.0001, hidden_layer_sizes=(100,), activation='logistic',
-                                      random_state=1)
+    neural_classifier = MLPClassifier(solver='lbfgs', alpha=0.0001, hidden_layer_sizes=(100,), activation='relu',
+                                      max_iter=500, random_state=1)
     neural_classifier.fit(x_train, y_train)
     classifications = neural_classifier.predict(x_test)
     mlp_metrics = ['Multi-Layer Perceptron'] + evaluation(classifications, y_test)
 
-    support_vector_classifier = svm.SVC()
+    support_vector_classifier = svm.SVC(kernel='poly')
     support_vector_classifier.fit(x_train, y_train)
     classifications = support_vector_classifier.predict(x_test)
     svm_metrics = ['Support Vector Classifier'] + evaluation(classifications, y_test)
 
-    support_vector_classifier = svm.LinearSVC()
-    support_vector_classifier.fit(x_train, y_train)
-    classifications = support_vector_classifier.predict(x_test)
+    linear_support_vector_classifier = svm.LinearSVC()
+    linear_support_vector_classifier.fit(x_train, y_train)
+    classifications = linear_support_vector_classifier.predict(x_test)
     linear_svm_metrics = ['Linear Support Vector Classifier'] + evaluation(classifications, y_test)
 
     table = [mlp_metrics, svm_metrics, linear_svm_metrics]
