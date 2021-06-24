@@ -63,8 +63,8 @@ def image_pre_processing(df: pd.DataFrame):
     f = pd.DataFrame(columns=c)
     # Display the process of a random image in the data set
     seed(0)
-    n = input('How many images would you like to train the model on.'
-              '\n1. < 5000\n2. >5000 and <10000\n3. Full dataset\n')
+    n = int(input('How many images would you like to train the model on.'
+              '\n1. < 5000\n2. >5000 and <10000\n3. Full dataset\n'))
     selected = 500
     if n == 1:
         selected = randint(500, 5000)
