@@ -1,0 +1,48 @@
+V3 FEATURE VECTOR
+0                  [3.084986019546987]
+1                   [6.55814102567335]
+2                  [12.40676136292705]
+3                 [13.003894042894817]
+4                  [25.74224474765843]
+5                 [16.450012067788737]
+6                 [26.134492919413518]
+area                              7171
+perimeter                     7.656854
+compactness                   0.008176
+convex                               1
+entropy                       0.263966
+hcontrast                    17.434273
+hdissimilarity                0.566805
+hhomogeneity                    0.9539
+henergy                       0.941161
+hcorrelation                  0.970662
+vcontrast                     7.590551
+vdissimilarity                0.365714
+vhomogeneity                  0.956748
+venergy                        0.94172
+vcorrelation                  0.987227
+label                   Cornus florida
+Name: 4999, dtype: object
+0                       0.957097
+1                        0.55213
+2                       0.411418
+3                       0.414679
+4                       0.962396
+5                       0.925387
+6                       0.627212
+area                    0.067348
+perimeter               0.000979
+compactness             0.000055
+convex                       1.0
+entropy                 0.260042
+hcontrast               0.022724
+hdissimilarity          0.063315
+hhomogeneity            0.931792
+henergy                 0.949565
+hcorrelation             0.93827
+vcontrast               0.010979
+vdissimilarity          0.043947
+vhomogeneity            0.933392
+venergy                 0.949997
+vcorrelation            0.969183
+label             Cornus florida

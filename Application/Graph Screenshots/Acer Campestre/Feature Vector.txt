@@ -1,0 +1,48 @@
+V2 FEATURE VECTOR
+0                 [3.1793916746484974]
+1                  [8.644193487285252]
+2                 [10.614470768245683]
+3                 [12.765959828755067]
+4                 [24.480886709521087]
+5                 [-17.19722481951452]
+6                 [24.940340636756147]
+area                             12420
+perimeter                   501.144222
+compactness                  20.221057
+convex                               0
+entropy                       0.393755
+hcontrast                    12.413885
+hdissimilarity                0.634699
+hhomogeneity                  0.878226
+henergy                        0.30252
+hcorrelation                  0.993782
+vcontrast                     7.837832
+vdissimilarity                0.513233
+vhomogeneity                  0.890513
+venergy                         0.3059
+vcorrelation                  0.996075
+label                   Acer campestre
+Name: 349, dtype: object
+0                       0.991617
+1                       0.757219
+2                       0.347314
+3                       0.406522
+4                       0.948165
+5                       0.290138
+6                       0.614128
+area                     0.11711
+perimeter               0.242474
+compactness             0.141304
+convex                       0.0
+entropy                 0.390524
+hcontrast               0.016156
+hdissimilarity          0.071258
+hhomogeneity            0.807429
+henergy                 0.262468
+hcorrelation            0.988812
+vcontrast               0.011342
+vdissimilarity          0.062468
+vhomogeneity             0.82165
+venergy                 0.264079
+vcorrelation            0.992522
+label             Acer campestre

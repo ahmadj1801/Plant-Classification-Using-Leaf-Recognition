@@ -65,13 +65,13 @@ def image_pre_processing(df: pd.DataFrame):
     seed(0)
     n = input('How many images would you like to train the model on.'
               '\n1. < 5000\n2. >5000 and <10000\n3. Full dataset\n')
+    selected = 500
     if n == 1:
-        selected = randint(0, 5000)
+        selected = randint(500, 5000)
     elif n == 2:
         selected = randint(5000, 10000)
     else:
         selected = len(df)
-    selected = 1000  # randint(0, len(df))
     print('Total Number of Images Being Used = ', selected)
     # preprocess the images
     c = 0
@@ -130,9 +130,6 @@ def image_pre_processing(df: pd.DataFrame):
             graph_image(morph, plant_name + ' after Morphological Operations')
             graph_image(final_image, plant_name + ' Final Image')
             return f
-        if c == 9243:
-            print('att bad image')
-            num = 1 + 1
         # Conduct feature extraction
         f = feature_extraction(f, final_image, gray, row['species'])
         # Counter
@@ -168,14 +165,15 @@ def feature_extraction(f, img, gray, lbl):
     else:
         perimeter = f['perimeter'].iloc[-1]
         convex = f['convex'].iloc[-1]
-    compactness = (perimeter**2) / area
-    entropy = shannon_entropy(img)
-    h_glcm_features = glcm_features(gray, 1, 0)
-    v_glcm_features = glcm_features(gray, 1, 90)
+
     if convex or convex == 1:
         convex = 1
     else:
         convex = 0
+    compactness = (perimeter**2) / area
+    entropy = shannon_entropy(img)
+    h_glcm_features = glcm_features(gray, 1, 0)
+    v_glcm_features = glcm_features(gray, 1, 90)
 
     hu_moments = cv2.HuMoments(moments)
     for i in range(7):
@@ -198,16 +196,19 @@ def train_and_evaluate(x_train, y_train, x_test, y_test):
     neural_classifier.fit(x_train, y_train)
     classifications = neural_classifier.predict(x_test)
     mlp_metrics = ['Multi-Layer Perceptron'] + evaluation(classifications, y_test)
+    print(classification_report(y_test, classifications, zero_division=1))
 
     support_vector_classifier = svm.SVC(kernel='poly')
     support_vector_classifier.fit(x_train, y_train)
     classifications = support_vector_classifier.predict(x_test)
     svm_metrics = ['Support Vector Classifier'] + evaluation(classifications, y_test)
+    print(classification_report(y_test, classifications, zero_division=1))
 
     linear_support_vector_classifier = svm.LinearSVC()
     linear_support_vector_classifier.fit(x_train, y_train)
     classifications = linear_support_vector_classifier.predict(x_test)
     linear_svm_metrics = ['Linear Support Vector Classifier'] + evaluation(classifications, y_test)
+    print(classification_report(y_test, classifications, zero_division=1))
 
     table = [mlp_metrics, svm_metrics, linear_svm_metrics]
     headings = ['Classifier', 'Accuracy', 'Recall', 'Precision', 'F1-Score', 'Hamming Loss']
@@ -217,10 +218,10 @@ def train_and_evaluate(x_train, y_train, x_test, y_test):
 def evaluation(classifications, truth):
     # Calculate metrics
     accuracy = round(accuracy_score(truth, classifications), 4)
-    recall = round(recall_score(truth, classifications, average='macro'), 4)
-    precision = round(precision_score(classifications, truth, average='macro'), 4)
-    f1_score_value = round(f1_score(classifications, truth, average='macro'), 4)
-    hamming_loss_value = round(hamming_loss(classifications, truth), 4)
+    recall = round(recall_score(truth, classifications, average='micro'), 4)
+    precision = round(precision_score(truth, classifications, average='micro', zero_division=1), 4)
+    f1_score_value = round(f1_score(truth, classifications, average='micro', zero_division=1), 4)
+    hamming_loss_value = round(hamming_loss(truth, classifications), 4)
     # return metrics
     return [accuracy, recall, precision, f1_score_value, hamming_loss_value]
 
@@ -239,7 +240,6 @@ def main():
     data = read_data_file()
     features = image_pre_processing(data)
     features = normalise_feature_matrix(features)
-    print(features)
     le = LabelEncoder()
     features['label'] = le.fit_transform(features['label'])
     Y = features['label']
@@ -247,8 +247,6 @@ def main():
 
     x_train, x_test, y_train, y_test = train_test_split(X, Y, train_size=0.9, random_state=43)
     train_and_evaluate(x_train, y_train, x_test, y_test)
-
-    # TODO: Get Feature vector of image(s)
 
 
 if __name__ == '__main__':

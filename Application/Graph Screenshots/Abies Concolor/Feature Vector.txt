@@ -1,0 +1,48 @@
+V1 FEATURE VECTOR
+0                   [2.460043362838032]
+1                   [4.936186046663725]
+2                   [9.946562132716169]
+3                   [10.09780347215507]
+4                  [20.121144045162165]
+5                   [12.60013705362204]
+6                 [-21.257130807311096]
+area                                251
+perimeter                    115.254833
+compactness                   52.923014
+convex                                0
+entropy                        0.016876
+hcontrast                     11.822043
+hdissimilarity                 0.128008
+hhomogeneity                    0.99108
+henergy                        0.938402
+hcorrelation                   0.768996
+vcontrast                      2.249273
+vdissimilarity                 0.061466
+vhomogeneity                   0.990832
+venergy                        0.938484
+vcorrelation                   0.956029
+label                    Abies concolor
+Name: 11, dtype: object
+0                       0.728586
+1                        0.39267
+2                       0.323425
+3                       0.315056
+4                       0.898979
+5                       0.852703
+6                        0.10799
+area                    0.001744
+perimeter               0.053633
+compactness             0.369827
+convex                       0.0
+entropy                 0.011635
+hcontrast               0.015382
+hdissimilarity          0.011978
+hhomogeneity            0.992894
+henergy                 0.946597
+hcorrelation            0.497409
+vcontrast                0.00314
+vdissimilarity          0.005749
+vhomogeneity            0.990893
+venergy                 0.946506
+vcorrelation            0.886889
+label             Abies concolor
