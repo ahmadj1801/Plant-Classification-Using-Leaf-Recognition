@@ -27,6 +27,7 @@ def read_data_file():
     return dataset
 
 
+# Draw the image with a title
 def graph_image(img, title):
     pt.subplot(1, 2, 1)
     pt.title(title)
@@ -34,12 +35,14 @@ def graph_image(img, title):
     pt.show()
 
 
+# Draw colours - used initially. Not anymore.
 def graph_colour(c):
     pt.subplot(1, 2, 1)
     pt.imshow(rgb_to_hsv(c))
     pt.show()
 
 
+# graph colour distribution
 def graph_hsv(img):
     b, g, r = cv2.split(img)
     fig = pt.figure()
@@ -55,6 +58,7 @@ def graph_hsv(img):
     pt.show()
 
 
+# Preprocess images
 def image_pre_processing(df: pd.DataFrame):
     # Features
     c = ['0', '1', '2', '3', '4', '5', '6', 'area', 'perimeter', 'compactness','convex', 'entropy',
@@ -63,6 +67,7 @@ def image_pre_processing(df: pd.DataFrame):
     f = pd.DataFrame(columns=c)
     # Display the process of a random image in the data set
     seed(0)
+    # input from user
     n = int(input('How many images would you like to train the model on.'
               '\n1. < 5000\n2. >5000 and <10000\n3. Full dataset\n'))
     selected = 500
@@ -103,7 +108,6 @@ def image_pre_processing(df: pd.DataFrame):
         if num_white > 2000:
             # Threshold the image
             T, thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
-            # Filters for opening and filtering
         opening = filtering = []
         final_image = []
         # Conduct filtering and opening if there are more than 2000 white pixels
@@ -115,6 +119,7 @@ def image_pre_processing(df: pd.DataFrame):
             # Preprocessed image
             final_image = morph
         else:
+            # Conduct dilation - make it more visible
             morph = cv2.morphologyEx(thresh, cv2.MORPH_DILATE, np.ones((3, 3)))
             final_image = morph
         # Display a last image
@@ -137,6 +142,7 @@ def image_pre_processing(df: pd.DataFrame):
     return f
 
 
+# GLCM and extracting features
 def glcm_features(img, distance, angle):
     glcm = greycomatrix(img, [distance], [angle], 256, symmetric=True, normed=True)
     contrast = greycoprops(glcm, prop='contrast')
@@ -144,14 +150,19 @@ def glcm_features(img, distance, angle):
     homogeneity = greycoprops(glcm, prop='homogeneity')
     energy = greycoprops(glcm, prop='energy')
     correlation = greycoprops(glcm, prop='correlation')
+    # Array of GLCM features
     feat = [contrast[0][0], dissimilarity[0][0], homogeneity[0][0],
             energy[0][0], correlation[0][0]]
     return feat
 
 
+# Feature Extraction for an image
 def feature_extraction(f, img, gray, lbl):
+    # HU moments
     moments = cv2.moments(img)
+    # Count white pixels - area
     area = np.sum(img == 255)
+    # Handling exception for one image - cant div by 0
     if area == 0:
         area = 1
     cnt = 1
@@ -160,27 +171,34 @@ def feature_extraction(f, img, gray, lbl):
     contour, hierachy = cv2.findContours(img, 1, 2)
     if len(contour) > 0:
         cnt = contour[0]
+        # Calculate perimeter
         perimeter = cv2.arcLength(cnt, True)
+        # Convex
         convex = cv2.isContourConvex(cnt)
     else:
         perimeter = f['perimeter'].iloc[-1]
         convex = f['convex'].iloc[-1]
-
+    # convex is initially boolean
     if convex or convex == 1:
         convex = 1
     else:
         convex = 0
+    # Calculate compactness
     compactness = (perimeter**2) / area
+    # Calculating entropy
     entropy = shannon_entropy(img)
+    # Horizontal GLCM features
     h_glcm_features = glcm_features(gray, 1, 0)
+    # Vertical GLCM features
     v_glcm_features = glcm_features(gray, 1, 90)
-
+    # Hu Moments
     hu_moments = cv2.HuMoments(moments)
     for i in range(7):
         if not hu_moments[i] == 0:
             hu_moments[i] = -1 * np.copysign(1.0, hu_moments[i]) * np.log10(abs(hu_moments[i]))
         else:
             hu_moments[i] = 0
+    # Add to feature matrix
     f.loc[len(f.index)] = [hu_moments[0], hu_moments[1], hu_moments[2], hu_moments[3],
                            hu_moments[4], hu_moments[5], hu_moments[6], area, perimeter,
                            compactness, convex, entropy, h_glcm_features[0], h_glcm_features[1],
@@ -190,7 +208,9 @@ def feature_extraction(f, img, gray, lbl):
     return f
 
 
+# Train and evaluate models
 def train_and_evaluate(x_train, y_train, x_test, y_test):
+    # MLP Model
     neural_classifier = MLPClassifier(solver='lbfgs', alpha=0.0001, hidden_layer_sizes=(100,), activation='relu',
                                       max_iter=500, random_state=1)
     neural_classifier.fit(x_train, y_train)
@@ -198,23 +218,27 @@ def train_and_evaluate(x_train, y_train, x_test, y_test):
     mlp_metrics = ['Multi-Layer Perceptron'] + evaluation(classifications, y_test)
     print(classification_report(y_test, classifications, zero_division=1))
 
+    # SVC Model
     support_vector_classifier = svm.SVC(kernel='poly')
     support_vector_classifier.fit(x_train, y_train)
     classifications = support_vector_classifier.predict(x_test)
     svm_metrics = ['Support Vector Classifier'] + evaluation(classifications, y_test)
     print(classification_report(y_test, classifications, zero_division=1))
 
+    # Linear SVC Model
     linear_support_vector_classifier = svm.LinearSVC()
     linear_support_vector_classifier.fit(x_train, y_train)
     classifications = linear_support_vector_classifier.predict(x_test)
     linear_svm_metrics = ['Linear Support Vector Classifier'] + evaluation(classifications, y_test)
     print(classification_report(y_test, classifications, zero_division=1))
 
+    # Construct neat display
     table = [mlp_metrics, svm_metrics, linear_svm_metrics]
     headings = ['Classifier', 'Accuracy', 'Recall', 'Precision', 'F1-Score', 'Hamming Loss']
     print(tabulate(table, headers=headings))
 
 
+# Method for evaluation
 def evaluation(classifications, truth):
     # Calculate metrics
     accuracy = round(accuracy_score(truth, classifications), 4)
@@ -226,26 +250,35 @@ def evaluation(classifications, truth):
     return [accuracy, recall, precision, f1_score_value, hamming_loss_value]
 
 
+# Normalising Feature Matrix - Min Max - rescaled to fit [0, 1]
 def normalise_feature_matrix(f: pd.DataFrame):
     # Scaler Object
     scaler = MinMaxScaler()
     labels = f['label']
     f = f.drop('label', axis=1)
+    # Normalization
     normalised = pd.DataFrame(scaler.fit_transform(f), columns=f.columns)
     normalised['label'] = labels
     return normalised
 
 
+# Main Method
 def main():
+    # Read datafile
     data = read_data_file()
+    # Get features
     features = image_pre_processing(data)
+    # Normalise feature
     features = normalise_feature_matrix(features)
+    # Encode the target labels
     le = LabelEncoder()
     features['label'] = le.fit_transform(features['label'])
+    # X(features) and Y(Labels) to be split for training and testing
     Y = features['label']
     X = features.drop('label', axis=1)
-
+    # Get train and test splits. 90% for training.
     x_train, x_test, y_train, y_test = train_test_split(X, Y, train_size=0.9, random_state=43)
+    # Train and evaluate model
     train_and_evaluate(x_train, y_train, x_test, y_test)
 
 
