@@ -66,7 +66,7 @@ def image_pre_processing(df: pd.DataFrame):
          'vcontrast', 'vdissimilarity', 'vhomogeneity', 'venergy', 'vcorrelation', 'label']
     f = pd.DataFrame(columns=c)
     # Display the process of a random image in the data set
-    seed(0)
+    # seed(0)
     # input from user
     n = int(input('How many images would you like to train the model on.'
               '\n1. < 5000\n2. >5000 and <10000\n3. Full dataset\n'))
